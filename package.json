@@ -5,6 +5,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist",
+    "images",
+    "plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -37,6 +44,6 @@
   "devDependencies": {
     "@elizaos/core": "2.0.0-alpha.77",
     "typescript": "^5.4.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.2.4"
   }
 }

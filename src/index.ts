@@ -15,6 +15,8 @@
  * @see https://github.com/sailorpepe/elizaos-tcg-oracle-plugin
  */
 
+import { validateTcgOracleConfig } from "./environment.js";
+
 import type {
   Plugin,
   Action,
@@ -135,19 +137,32 @@ const searchAction: Action = {
     "FIND_POKEMON",
     "SEARCH_MTG",
   ],
+  parameters: [
+    {
+      name: "query",
+      description: "The card name, set name, or keyword to search for (e.g., 'Charizard', 'Base Set', 'Pikachu VMAX')",
+      required: true,
+      schema: { type: "string" },
+    },
+    {
+      name: "limit",
+      description: "Maximum number of results to return (default: 10, max: 50)",
+      required: false,
+      schema: { type: "number" },
+    },
+  ],
   examples: [
     [
-      {
-        name: "{{user1}}",
-        content: { text: "Search for Charizard cards" },
-      } as ActionExample,
-      {
-        name: "{{agentName}}",
-        content: {
-          text: "Searching TCG Oracle for Charizard...",
-          action: "TCG_ORACLE_SEARCH",
-        },
-      } as ActionExample,
+      { name: "{{user1}}", content: { text: "Search for Charizard cards" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Searching TCG Oracle for Charizard...", action: "TCG_ORACLE_SEARCH" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "What Pikachu VMAX cards are available?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Looking up Pikachu VMAX products...", action: "TCG_ORACLE_SEARCH" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Find me Base Set holographic cards" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Searching for Base Set holographic cards...", action: "TCG_ORACLE_SEARCH" } } as ActionExample,
     ],
   ],
   validate: async (runtime: IAgentRuntime) => {
@@ -207,19 +222,32 @@ const gradeAction: Action = {
     "RATE_CARD",
     "EVALUATE_CARD",
   ],
+  parameters: [
+    {
+      name: "image_url",
+      description: "Direct URL to the card image (PNG, JPG, or WebP)",
+      required: true,
+      schema: { type: "string" },
+    },
+    {
+      name: "game",
+      description: "The TCG game this card belongs to (default: Pokemon)",
+      required: false,
+      schema: { type: "string" },
+    },
+  ],
   examples: [
     [
-      {
-        name: "{{user1}}",
-        content: { text: "Grade this card: https://example.com/charizard.jpg" },
-      } as ActionExample,
-      {
-        name: "{{agentName}}",
-        content: {
-          text: "Analyzing card image for grading...",
-          action: "TCG_ORACLE_GRADE",
-        },
-      } as ActionExample,
+      { name: "{{user1}}", content: { text: "Grade this card: https://example.com/charizard.jpg" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Analyzing card image for grading...", action: "TCG_ORACLE_GRADE" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "What PSA grade would this get? https://i.imgur.com/card.png" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Running AI vision grading analysis...", action: "TCG_ORACLE_GRADE" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Rate the condition of this Magic card https://example.com/mtg.jpg" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Evaluating card condition for Beckett grading...", action: "TCG_ORACLE_GRADE" } } as ActionExample,
     ],
   ],
   validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
@@ -301,17 +329,16 @@ const simulateAction: Action = {
   ],
   examples: [
     [
-      {
-        name: "{{user1}}",
-        content: { text: "Simulate the price of Charizard VMAX at $350 for 60 days" },
-      } as ActionExample,
-      {
-        name: "{{agentName}}",
-        content: {
-          text: "Running Monte Carlo simulation on Charizard VMAX...",
-          action: "TCG_ORACLE_SIMULATE",
-        },
-      } as ActionExample,
+      { name: "{{user1}}", content: { text: "Simulate the price of Charizard VMAX at $350 for 60 days" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Running Monte Carlo simulation on Charizard VMAX...", action: "TCG_ORACLE_SIMULATE" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "What will a PSA 10 Base Set Blastoise worth $800 be in 90 days using merton model?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Running Merton jump-diffusion simulation for Blastoise...", action: "TCG_ORACLE_SIMULATE" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Forecast Lorcana Elsa at $25 for 30 days" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Simulating Lorcana Elsa price trajectory...", action: "TCG_ORACLE_SIMULATE" } } as ActionExample,
     ],
   ],
   validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
@@ -391,17 +418,16 @@ const marketAction: Action = {
   ],
   examples: [
     [
-      {
-        name: "{{user1}}",
-        content: { text: "Show me the Pokemon market snapshot" },
-      } as ActionExample,
-      {
-        name: "{{agentName}}",
-        content: {
-          text: "Pulling the latest Pokemon market data...",
-          action: "TCG_ORACLE_MARKET",
-        },
-      } as ActionExample,
+      { name: "{{user1}}", content: { text: "Show me the Pokemon market snapshot" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling the latest Pokemon market data...", action: "TCG_ORACLE_MARKET" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "What's happening in the Yu-Gi-Oh market today?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Fetching Yu-Gi-Oh market snapshot...", action: "TCG_ORACLE_MARKET" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Top movers in Magic: The Gathering" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling Magic: The Gathering market data...", action: "TCG_ORACLE_MARKET" } } as ActionExample,
     ],
   ],
   validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
@@ -483,6 +509,14 @@ const tcgOraclePlugin: Plugin = {
     "Covers 370K+ products across 25 games with Monte Carlo price simulation " +
     "(Heston/Merton/Kou), AI vision card grading, and real-time market snapshots. " +
     "Powered by TCGCSV daily data pipeline.",
+  init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
+    const validation = validateTcgOracleConfig(runtime);
+    if (!validation.valid) {
+      console.warn(`⚠️ TCG Oracle: ${validation.error}`);
+    } else {
+      console.log(`✅ TCG Oracle connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
+    }
+  },
   actions: [searchAction, gradeAction, simulateAction, marketAction],
   providers: [tcgOracleProvider],
   evaluators: [],
