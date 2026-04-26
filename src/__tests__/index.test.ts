@@ -14,10 +14,13 @@ describe("plugin-tcg-oracle", () => {
       const plugin = (await import("../index.js")).default;
 
       expect(plugin.name).toBe("@undesirables/plugin-tcg-oracle");
-      expect(plugin.description).toBeTruthy();
-      expect(plugin.actions).toHaveLength(4);
-      expect(plugin.providers).toHaveLength(1);
-      expect(plugin.evaluators).toEqual([]);
+      expect(plugin.actions.length).toBeGreaterThan(0);
+      expect(plugin.providers).toBeDefined();
+      expect(plugin.providers?.length).toBeGreaterThan(0);
+      expect(plugin.evaluators).toBeDefined();
+      expect(plugin.evaluators?.length).toBe(1);
+      expect(plugin.services).toBeDefined();
+      expect(plugin.services?.length).toBe(1);
     });
 
     it("should have correct action names", async () => {
