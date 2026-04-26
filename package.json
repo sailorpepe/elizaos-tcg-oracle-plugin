@@ -13,7 +13,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "clean": "rm -rf dist",
     "test": "vitest run"
   },
@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@elizaos/core": "2.0.0-alpha.77",
+    "tsup": "^8.5.1",
     "typescript": "^5.4.0",
     "vitest": "^3.2.4"
   }
