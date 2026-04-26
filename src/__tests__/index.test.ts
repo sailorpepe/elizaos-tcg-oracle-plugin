@@ -18,7 +18,7 @@ describe("plugin-tcg-oracle", () => {
       expect(plugin.providers).toBeDefined();
       expect(plugin.providers?.length).toBeGreaterThan(0);
       expect(plugin.evaluators).toBeDefined();
-      expect(plugin.evaluators?.length).toBe(1);
+      expect(plugin.evaluators?.length).toBe(0);
       expect(plugin.services).toBeDefined();
       expect(plugin.services?.length).toBe(1);
     });

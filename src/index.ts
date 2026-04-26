@@ -16,7 +16,6 @@
  */
 
 import { validateTcgOracleConfig } from "./environment.js";
-import { preferenceEvaluator } from "./evaluators.js";
 import { MarketMonitorService } from "./services.js";
 
 import type {
@@ -521,7 +520,7 @@ const tcgOraclePlugin: Plugin = {
   },
   actions: [searchAction, gradeAction, simulateAction, marketAction],
   providers: [tcgOracleProvider],
-  evaluators: [preferenceEvaluator],
+  evaluators: [],
   services: [MarketMonitorService],
 };
 
