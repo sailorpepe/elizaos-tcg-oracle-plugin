@@ -1,7 +1,7 @@
 {
   "name": "@undesirables/plugin-tcg-oracle",
-  "version": "1.0.0",
-  "description": "ElizaOS plugin for TCG Oracle — AI-powered trading card market intelligence. Covers 370K+ products across 25 games with Monte Carlo price simulation (Heston/Merton/Kou), AI vision card grading, and real-time market snapshots.",
+  "version": "1.1.0",
+  "description": "ElizaOS plugin for TCG Oracle — AI-powered trading card market intelligence. 7 actions: search, grade, simulate, market, grade-or-not ROI engine, trending cards, and grading arbitrage scanner. Covers 370K+ products across 25 games.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",

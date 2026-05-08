@@ -5,6 +5,10 @@ export class MarketMonitorService extends Service {
   // or define static serviceType depending on the core version.
   static serviceType = "TCG_MARKET_MONITOR";
 
+  get capabilityDescription(): string {
+    return "Monitors TCG market data for price spikes and trending cards";
+  }
+
   static async start(runtime: IAgentRuntime): Promise<MarketMonitorService> {
     const service = new MarketMonitorService();
     await service.initialize(runtime);
