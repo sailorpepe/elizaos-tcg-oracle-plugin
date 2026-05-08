@@ -466,6 +466,250 @@ const marketAction: Action = {
 };
 
 // ============================================================
+// ACTION 5: Grade-or-Not Decision Engine
+// ============================================================
+
+const gradeOrNotAction: Action = {
+  name: "TCG_ORACLE_GRADE_OR_NOT",
+  description:
+    "Answers 'will grading this card make me money?' by combining AI grade prediction with PSA fee schedules, shipping costs, and graded market values. Returns a GO/NO-GO verdict with expected ROI and profit scenarios (best case, predicted, worst case).",
+  similes: [
+    "SHOULD_I_GRADE",
+    "GRADE_ROI",
+    "GRADING_PROFIT",
+    "IS_IT_WORTH_GRADING",
+    "GRADE_OR_NOT",
+  ],
+  parameters: [
+    {
+      name: "card_name",
+      description: "Name of the card to evaluate (e.g., 'Base Set Charizard Holo')",
+      required: true,
+      schema: { type: "string" },
+    },
+    {
+      name: "predicted_grade",
+      description: "Your predicted PSA grade (0 = auto-estimate)",
+      required: false,
+      schema: { type: "number" },
+    },
+    {
+      name: "raw_price",
+      description: "Current raw card value in USD (0 = auto-lookup)",
+      required: false,
+      schema: { type: "number" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "Should I grade my Base Set Charizard?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Running Grade-or-Not analysis...", action: "TCG_ORACLE_GRADE_OR_NOT" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Is it worth grading a PSA 8 Pikachu VMAX worth $45?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Calculating grading ROI for Pikachu VMAX...", action: "TCG_ORACLE_GRADE_OR_NOT" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    _options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content.text || "";
+
+    // Extract card name
+    const cardName = text
+      .replace(/^(should i|is it worth|grade or not|grading roi|will grading)\s*/i, "")
+      .replace(/\s*(make me money|be profitable|worth it)\s*\??$/i, "")
+      .replace(/^(grade|grading)\s*/i, "")
+      .replace(/\bmy\b/i, "")
+      .trim() || "Unknown Card";
+
+    // Extract price and grade if mentioned
+    const priceMatch = text.match(/\$?([\d,]+(?:\.\d{2})?)/);
+    const gradeMatch = text.match(/\bpsa\s*(\d+(?:\.\d)?)\b/i) || text.match(/\bgrade\s*(\d+(?:\.\d)?)\b/i);
+
+    const params: Record<string, string | number> = { card_name: cardName };
+    if (priceMatch) params.raw_price = parseFloat(priceMatch[1].replace(",", ""));
+    if (gradeMatch) params.predicted_grade = parseFloat(gradeMatch[1]);
+
+    const result = await callApi(getBaseUrl(runtime), "/api/v1/grade-or-not", params);
+
+    if (result.error) {
+      if (callback) await callback({ text: `Grade-or-Not analysis failed: ${result.error}` });
+      return { success: false, error: result.error };
+    }
+
+    const data = result.data;
+    const verdict = data?.verdict || "Unknown";
+    const explanation = data?.explanation || "";
+    const responseText = `Grade-or-Not verdict for ${cardName}:\n\n${verdict}\n${explanation}\n\nFull analysis:\n${safeStringify(data)}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_GRADE_OR_NOT");
+    return { success: true, text: responseText, data: { grade_or_not: data } };
+  },
+};
+
+// ============================================================
+// ACTION 6: Trending Cards
+// ============================================================
+
+const trendingAction: Action = {
+  name: "TCG_ORACLE_TRENDING",
+  description:
+    "Returns the top trending trading cards by market activity (30-day sales volume, views, and price velocity). Covers all 25 supported TCG games. Useful for spotting market momentum and emerging opportunities.",
+  similes: [
+    "TRENDING_CARDS",
+    "HOT_CARDS",
+    "TOP_MOVERS",
+    "WHATS_TRENDING",
+    "POPULAR_CARDS",
+    "MARKET_TRENDS",
+  ],
+  parameters: [
+    {
+      name: "game",
+      description: "Filter by game name (empty = all games)",
+      required: false,
+      schema: { type: "string" },
+    },
+    {
+      name: "limit",
+      description: "Number of results (default: 25, max: 100)",
+      required: false,
+      schema: { type: "number" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "What Pokemon cards are trending right now?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling trending Pokemon cards...", action: "TCG_ORACLE_TRENDING" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Show me the hottest cards across all games" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Fetching trending cards across all TCG games...", action: "TCG_ORACLE_TRENDING" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    _options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content?.text?.toLowerCase() || "";
+
+    // Detect game from message
+    let game = "";
+    for (const g of SUPPORTED_GAMES) {
+      if (text.includes(g.toLowerCase())) {
+        game = g;
+        break;
+      }
+    }
+
+    const params: Record<string, string | number> = { limit: 25 };
+    if (game) params.game = game;
+
+    const result = await callApi(getBaseUrl(runtime), "/api/v1/trending", params);
+
+    if (result.error) {
+      if (callback) await callback({ text: `Trending cards failed: ${result.error}` });
+      return { success: false, error: result.error };
+    }
+
+    const summary = safeStringify(result.data, 15);
+    const responseText = `Trending cards${game ? ` for ${game}` : " across all games"}:\n\n${summary}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_TRENDING");
+    return { success: true, text: responseText, data: { trending: result.data } };
+  },
+};
+
+// ============================================================
+// ACTION 7: Raw Card Arbitrage Scanner
+// ============================================================
+
+const arbGradeAction: Action = {
+  name: "TCG_ORACLE_ARB_GRADE",
+  description:
+    "Scans the TCG database for undervalued raw cards where grading would produce ROI above a threshold. Estimates PSA grades based on price tier and rarity, calculates expected graded values, and returns ranked opportunities sorted by expected profit.",
+  similes: [
+    "GRADING_ARBITRAGE",
+    "FIND_UNDERVALUED",
+    "ARBITRAGE_SCAN",
+    "PROFITABLE_CARDS",
+    "WHAT_TO_GRADE",
+  ],
+  parameters: [
+    {
+      name: "game",
+      description: "TCG game to scan (default: Pokemon)",
+      required: false,
+      schema: { type: "string" },
+    },
+    {
+      name: "min_roi",
+      description: "Minimum expected ROI % to flag as opportunity (default: 50)",
+      required: false,
+      schema: { type: "number" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "Find me profitable Pokemon cards to grade" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Scanning for grading arbitrage opportunities...", action: "TCG_ORACLE_ARB_GRADE" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "What Magic cards have the best grading ROI?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Running arbitrage scanner on Magic: The Gathering...", action: "TCG_ORACLE_ARB_GRADE" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    _options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content?.text?.toLowerCase() || "";
+
+    // Detect game from message
+    let game = "Pokemon";
+    for (const g of SUPPORTED_GAMES) {
+      if (text.includes(g.toLowerCase())) {
+        game = g;
+        break;
+      }
+    }
+
+    const params: Record<string, string | number> = {
+      game,
+      min_roi: 50,
+      limit: 20,
+    };
+
+    const result = await callApi(getBaseUrl(runtime), "/api/v1/arb-grade", params);
+
+    if (result.error) {
+      if (callback) await callback({ text: `Arbitrage scan failed: ${result.error}` });
+      return { success: false, error: result.error };
+    }
+
+    const summary = safeStringify(result.data, 15);
+    const responseText = `Grading arbitrage opportunities for ${game}:\n\n${summary}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_ARB_GRADE");
+    return { success: true, text: responseText, data: { arbitrage: result.data } };
+  },
+};
+
+// ============================================================
 // PROVIDER: TCG Oracle Context
 // ============================================================
 
@@ -481,15 +725,16 @@ const tcgOracleProvider: Provider = {
     const status = baseUrl ? "connected" : "not configured";
 
     return {
-      text: `[TCG Oracle]
+      text: `[TCG Oracle v1.1.0]
 Status: ${status}
 Database: 370,158 products across 25 games
 Data source: TCGCSV daily snapshots
 Models: Heston (stochastic vol), Merton (jump-diffusion), Kou (double-exp)
+Actions: search, grade, simulate, market, grade-or-not, trending, arb-grade
 Supported games: ${SUPPORTED_GAMES.join(", ")}
 API: ${baseUrl || "TCG_ORACLE_URL not set"}
 
-The agent can search cards, grade card images, simulate prices via Monte Carlo, and pull market snapshots.`,
+The agent can search cards, grade card images, simulate prices via Monte Carlo, pull market snapshots, check grading ROI, view trending cards, and scan for grading arbitrage opportunities.`,
       values: {
         tcgOracleStatus: status,
         tcgOracleUrl: baseUrl || "not set",
@@ -508,17 +753,18 @@ const tcgOraclePlugin: Plugin = {
   description:
     "TCG Oracle — AI-powered trading card market intelligence for ElizaOS agents. " +
     "Covers 370K+ products across 25 games with Monte Carlo price simulation " +
-    "(Heston/Merton/Kou), AI vision card grading, and real-time market snapshots. " +
+    "(Heston/Merton/Kou), AI vision card grading with ROI analysis, " +
+    "trending cards feed, grading arbitrage scanner, and real-time market snapshots. " +
     "Powered by TCGCSV daily data pipeline.",
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
     const validation = validateTcgOracleConfig(runtime);
     if (!validation.valid) {
       console.warn(`⚠️ TCG Oracle: ${validation.error}`);
     } else {
-      console.log(`✅ TCG Oracle connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
+      console.log(`✅ TCG Oracle v1.1.0 connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
     }
   },
-  actions: [searchAction, gradeAction, simulateAction, marketAction],
+  actions: [searchAction, gradeAction, simulateAction, marketAction, gradeOrNotAction, trendingAction, arbGradeAction],
   providers: [tcgOracleProvider],
   evaluators: [],
   services: [MarketMonitorService],
@@ -526,3 +772,4 @@ const tcgOraclePlugin: Plugin = {
 
 export default tcgOraclePlugin;
 export { SUPPORTED_GAMES, SIMULATION_MODELS };
+

@@ -59,6 +59,9 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
 | `TCG_ORACLE_SIMULATE` | Monte Carlo price forecast with 3 stochastic models | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
+| `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
+| `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
+| `TCG_ORACLE_ARB_GRADE` | Grading arbitrage scanner — finds profitable cards to grade | "Find me profitable cards to grade" |
 
 ---
 
