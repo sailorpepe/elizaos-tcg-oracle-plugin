@@ -1,11 +1,36 @@
-# @undesirables/plugin-tcg-oracle
+<div align="center">
 
 ![TCG Oracle Banner](./images/banner.jpg)
 
-[![npm](https://img.shields.io/npm/v/@undesirables/plugin-tcg-oracle)](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle)
-[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-blue)](LICENSE)
+# @undesirables/plugin-tcg-oracle
 
-> Give any ElizaOS agent real trading card market intelligence — search 370K+ products, grade cards with AI vision, and simulate future prices with Monte Carlo models.
+**Give any ElizaOS agent real trading card market intelligence — search, grade, and forecast.**
+
+[![npm](https://img.shields.io/npm/v/@undesirables/plugin-tcg-oracle?style=flat-square)](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle)
+[![npm downloads](https://img.shields.io/npm/dm/@undesirables/plugin-tcg-oracle?style=flat-square)](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle)
+[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-red?style=flat-square)](LICENSE)
+[![ElizaOS](https://img.shields.io/badge/ElizaOS-Compatible-5A67D8?style=flat-square&logo=data:image/svg+xml;base64,&logoColor=white)](https://elizaos.ai)
+[![Games](https://img.shields.io/badge/Games-Pok%C3%A9mon%20%C2%B7%20MTG%20%C2%B7%20Yu--Gi--Oh!-ff14a0?style=flat-square)](https://tcgcsv.com)
+
+[npm](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle) · [TCG Oracle API](https://the-undesirables.com/docs) · [Kaggle Dataset](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence)
+
+</div>
+
+---
+
+## Table of Contents
+
+- [Why This Exists](#why-this-exists)
+- [Quick Start](#quick-start)
+- [Actions](#actions)
+- [How It Works](#how-it-works)
+- [Supported Games](#supported-games-25)
+- [How the Data Works](#how-the-data-works)
+- [Self-Hosting](#self-hosting)
+- [Configuration](#configuration)
+- [Architecture](#architecture)
+- [Related Projects](#related-projects)
+- [License & Commercial Use](#-license--commercial-use)
 
 ---
 
@@ -17,7 +42,7 @@ This plugin gives your ElizaOS agent the ability to do all of that in one conver
 
 1. **"Search for Charizard cards"** → Instantly searches 370K+ real products across 25 games
 2. **"Grade this card"** → AI vision analyzes centering, corners, edges, surface → predicts PSA/Beckett score
-3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs 10,000 Monte Carlo simulations using Heston, Merton, or Kou stochastic models → returns percentile price bands
+3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs 10,000 Merton Jump-Diffusion Monte Carlo simulations → returns percentile price bands
 4. **"Show me the Pokemon market"** → Pulls the latest daily market snapshot with top movers and volume trends
 
 No API keys required from third parties. You just point it at the TCG Oracle server (self-hosted or public).
@@ -57,11 +82,44 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 |--------|-------------|----------------|
 | `TCG_ORACLE_SEARCH` | Search 370K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
-| `TCG_ORACLE_SIMULATE` | Monte Carlo price forecast with 3 stochastic models | "Simulate Charizard at $350 for 60 days" |
+| `TCG_ORACLE_SIMULATE` | Merton Jump-Diffusion Monte Carlo price forecast | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
 | `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
 | `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
 | `TCG_ORACLE_ARB_GRADE` | Grading arbitrage scanner — finds profitable cards to grade | "Find me profitable cards to grade" |
+
+---
+
+## How It Works
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                        ElizaOS Agent                           │
+│                                                                │
+│  User: "Simulate Charizard VMAX at $350 for 60 days"          │
+│                         │                                      │
+│                         ▼                                      │
+│              ┌─────────────────────┐                           │
+│              │  Action Router      │                           │
+│              │  (LLM selects best  │                           │
+│              │   action + params)  │                           │
+│              └────────┬────────────┘                           │
+└───────────────────────┼────────────────────────────────────────┘
+                        │  fetch() + 30s timeout
+                        ▼
+┌────────────────────────────────────────────────────────────────┐
+│                    TCG Oracle API Server                        │
+│                                                                │
+│  /api/v1/search ─────── 370K+ products (TCGCSV)               │
+│  /api/v1/grade ──────── Vision LLM + OpenCV → PSA/BGS score   │
+│  /api/v1/simulate ───── Merton Jump-Diffusion Monte Carlo     │
+│  /api/v1/market ─────── Daily snapshot + top movers            │
+│  /api/v1/trending ───── 30-day volume + price velocity         │
+│  /api/v1/arb-grade ──── Grading ROI scanner                   │
+│  /api/v1/grade-or-not ─ PSA fee × grade × value = GO/NO-GO   │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -75,10 +133,9 @@ Pokémon · Magic: The Gathering · Yu-Gi-Oh! · Disney Lorcana · One Piece · 
 
 All market data comes from [TCGCSV](https://tcgcsv.com) — a community project that snapshots pricing data daily for 25 TCG games. Our GitLab CI pipeline automatically refreshes this data every 24 hours. The full dataset (370K+ products) is also available on [Kaggle](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence).
 
-**Monte Carlo models explained:**
-- **Heston** — Models volatility itself as stochastic (volatility changes over time). Best for cards with unpredictable hype cycles.
-- **Merton** — Adds random jumps to the price process. Best for cards that can spike on tournament results or reprints.
-- **Kou** — Uses double-exponential jump distribution. Best for modeling asymmetric risk (big upside spikes vs gradual decline).
+**Monte Carlo model — Merton Jump-Diffusion:**
+
+All price simulations use the **Merton Jump-Diffusion** model, which extends geometric Brownian motion with random jumps in the price process. This captures the unique dynamics of the collectibles market — where prices can spike suddenly on tournament results, reprints, or viral hype — while maintaining a continuous diffusion component for normal day-to-day trading. Every forecast response includes the full model parameters (`drift_mu`, `diffusion_sigma`, `jump_intensity_lambda`, `jump_mean_mu_j`, `jump_std_sigma_j`) for complete transparency.
 
 ---
 
@@ -117,7 +174,6 @@ This is a **native TypeScript** ElizaOS plugin. It runs natively in the ElizaOS 
 
 ---
 
-
 ## 📝 License & Commercial Use
 
 This project is licensed under the **[Business Source License 1.1 (BUSL-1.1)](LICENSE)**.
@@ -148,3 +204,13 @@ Building a commercial product? Want guaranteed API access or white-label integra
 📧 **theundesirables7@gmail.com** · 🐦 **[@undesirables_ai](https://x.com/undesirables_ai)**
 
 © 2026 The Undesirables LLC
+
+---
+
+<div align="center">
+
+⭐ **If this project helped you, please star this repo** — it helps others find it.
+
+[Report Bug](../../issues) · [Request Feature](../../issues)
+
+</div>
