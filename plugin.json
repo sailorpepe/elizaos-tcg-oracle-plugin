@@ -1,7 +1,7 @@
 {
   "name": "@undesirables/plugin-tcg-oracle",
   "version": "1.0.0",
-  "description": "ElizaOS plugin for TCG Oracle — AI-powered trading card market intelligence with Monte Carlo simulation and AI vision grading for 370K+ products across 25 games.",
+  "description": "ElizaOS plugin for TCG Oracle — AI-powered trading card market intelligence with calibrated risk forecasts and AI vision grading for 370K+ products across 25 games.",
   "author": "The Undesirables LLC",
   "license": "BUSL-1.1",
   "type": "module",
@@ -17,7 +17,7 @@
     "elizaos-plugins",
     "tcg",
     "trading-cards",
-    "monte-carlo",
+    "risk-forecasting",
     "card-grading",
     "market-intelligence"
   ],
