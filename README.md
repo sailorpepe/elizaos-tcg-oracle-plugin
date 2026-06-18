@@ -42,7 +42,7 @@ This plugin gives your ElizaOS agent the ability to do all of that in one conver
 
 1. **"Search for Charizard cards"** → Instantly searches 370K+ real products across 25 games
 2. **"Grade this card"** → AI vision analyzes centering, corners, edges, surface → predicts PSA/Beckett score
-3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs 10,000 Merton Jump-Diffusion Monte Carlo simulations → returns percentile price bands
+3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs a calibrated conformal risk forecast → returns honest VaR + percentile price bands
 4. **"Show me the Pokemon market"** → Pulls the latest daily market snapshot with top movers and volume trends
 
 No API keys required from third parties. You just point it at the TCG Oracle server (self-hosted or public).
@@ -82,7 +82,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 |--------|-------------|----------------|
 | `TCG_ORACLE_SEARCH` | Search 370K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
-| `TCG_ORACLE_SIMULATE` | Merton Jump-Diffusion Monte Carlo price forecast | "Simulate Charizard at $350 for 60 days" |
+| `TCG_ORACLE_SIMULATE` | Calibrated risk forecast — honest VaR (conformal default; Monte Carlo opt-in) | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
 | `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
 | `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
@@ -112,7 +112,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 │                                                                │
 │  /api/v1/search ─────── 370K+ products (TCGCSV)               │
 │  /api/v1/grade ──────── Vision LLM + OpenCV → PSA/BGS score   │
-│  /api/v1/simulate ───── Merton Jump-Diffusion Monte Carlo     │
+│  /api/v1/simulate ───── Conformal forecast + card grades      │
 │  /api/v1/market ─────── Daily snapshot + top movers            │
 │  /api/v1/trending ───── 30-day volume + price velocity         │
 │  /api/v1/arb-grade ──── Grading ROI scanner                   │
@@ -133,9 +133,9 @@ Pokémon · Magic: The Gathering · Yu-Gi-Oh! · Disney Lorcana · One Piece · 
 
 All market data comes from [TCGCSV](https://tcgcsv.com) — a community project that snapshots pricing data daily for 25 TCG games. Our GitLab CI pipeline automatically refreshes this data every 24 hours. The full dataset (370K+ products) is also available on [Kaggle](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence).
 
-**Monte Carlo model — Merton Jump-Diffusion:**
+**Risk model — conformal calibration (default):**
 
-All price simulations use the **Merton Jump-Diffusion** model, which extends geometric Brownian motion with random jumps in the price process. This captures the unique dynamics of the collectibles market — where prices can spike suddenly on tournament results, reprints, or viral hype — while maintaining a continuous diffusion component for normal day-to-day trading. Every forecast response includes the full model parameters (`drift_mu`, `diffusion_sigma`, `jump_intensity_lambda`, `jump_mean_mu_j`, `jump_std_sigma_j`) for complete transparency.
+Price forecasts default to a **regime-aware split-conformal** model: distribution-free bands calibrated on real cross-card price history, so the published downside risk (VaR) is *honest* — out-of-sample, a "5% loss" actually happens about 5% of the time — and fully **deterministic**, so anyone can reproduce the exact numbers. Each card also gets two letter grades: **Safe-Hold** (downside protection) and **Momentum** (direction). Monte Carlo models (GBM and Merton jump-diffusion) remain available via `model=`, seeded from the public **drand** randomness beacon for provably-fair draws. Forecast responses include the model parameters (e.g. `drift_mu`, `diffusion_sigma`, `regime`) for full transparency.
 
 ---
 
