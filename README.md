@@ -40,7 +40,7 @@ The trading card market is worth **$50 billion** and growing. Millions of people
 
 This plugin gives your ElizaOS agent the ability to do all of that in one conversation:
 
-1. **"Search for Charizard cards"** → Instantly searches 442K+ real products across 25 games
+1. **"Search for Charizard cards"** → Instantly searches 446K+ real products across 25+ games
 2. **"Grade this card"** → AI vision analyzes centering, corners, edges, surface → predicts PSA/Beckett score
 3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs a calibrated conformal risk forecast → returns honest VaR + percentile price bands
 4. **"Show me the Pokemon market"** → Pulls the latest daily market snapshot with top movers and volume trends
@@ -80,7 +80,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 
 | Action | What It Does | Example Prompt |
 |--------|-------------|----------------|
-| `TCG_ORACLE_SEARCH` | Search 442K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
+| `TCG_ORACLE_SEARCH` | Search 446K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
 | `TCG_ORACLE_SIMULATE` | Calibrated risk forecast — honest VaR (conformal default; Monte Carlo opt-in) | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
@@ -110,7 +110,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 ┌────────────────────────────────────────────────────────────────┐
 │                    TCG Oracle API Server                        │
 │                                                                │
-│  /api/v1/search ─────── 442K+ products (TCGCSV)               │
+│  /api/v1/search ─────── 446K+ products (TCGCSV)               │
 │  /api/v1/grade ──────── Vision LLM + OpenCV → PSA/BGS score   │
 │  /api/v1/simulate ───── Conformal forecast + card grades      │
 │  /api/v1/market ─────── Daily snapshot + top movers            │
@@ -131,7 +131,7 @@ Pokémon · Magic: The Gathering · Yu-Gi-Oh! · Disney Lorcana · One Piece · 
 
 ## How the Data Works
 
-All market data comes from [TCGCSV](https://tcgcsv.com) — a community project that snapshots pricing data daily for 25 TCG games. Our GitLab CI pipeline automatically refreshes this data every 24 hours. The full dataset (442K+ products) is also available on [Kaggle](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence).
+All market data comes from [TCGCSV](https://tcgcsv.com) — a community project that snapshots pricing data daily for 25 TCG games. Our GitLab CI pipeline automatically refreshes this data every 24 hours. The full dataset (446K+ products) is also available on [Kaggle](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence).
 
 **Risk model — conformal calibration (default):**
 
