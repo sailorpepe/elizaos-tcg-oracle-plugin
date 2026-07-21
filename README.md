@@ -86,7 +86,6 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
 | `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
 | `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
-| `TCG_ORACLE_ARB_GRADE` | Grading arbitrage scanner — finds profitable cards to grade | "Find me profitable cards to grade" |
 
 ---
 
@@ -115,7 +114,6 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 │  /api/v1/simulate ───── Conformal forecast + card grades      │
 │  /api/v1/market ─────── Daily snapshot + top movers            │
 │  /api/v1/trending ───── 30-day volume + price velocity         │
-│  /api/v1/arb-grade ──── Grading ROI scanner                   │
 │  /api/v1/grade-or-not ─ PSA fee × grade × value = GO/NO-GO   │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘

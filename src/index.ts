@@ -129,7 +129,7 @@ function safeStringify(data: any, maxItems = 10): string {
 const searchAction: Action = {
   name: "TCG_ORACLE_SEARCH",
   description:
-    "Search for trading card products across 25 games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and current market prices from 446K+ real products sourced from TCGCSV daily.",
+    "Search for trading card products across 25+ games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and current market prices from 446K+ real products sourced from TCGCSV daily.",
   similes: [
     "SEARCH_CARDS",
     "FIND_CARD",
@@ -632,85 +632,6 @@ const trendingAction: Action = {
 };
 
 // ============================================================
-// ACTION 7: Raw Card Arbitrage Scanner
-// ============================================================
-
-const arbGradeAction: Action = {
-  name: "TCG_ORACLE_ARB_GRADE",
-  description:
-    "Scans the TCG database for undervalued raw cards where grading would produce ROI above a threshold. Estimates PSA grades based on price tier and rarity, calculates expected graded values, and returns ranked opportunities sorted by expected profit.",
-  similes: [
-    "GRADING_ARBITRAGE",
-    "FIND_UNDERVALUED",
-    "ARBITRAGE_SCAN",
-    "PROFITABLE_CARDS",
-    "WHAT_TO_GRADE",
-  ],
-  parameters: [
-    {
-      name: "game",
-      description: "TCG game to scan (default: Pokemon)",
-      required: false,
-      schema: { type: "string" },
-    },
-    {
-      name: "min_roi",
-      description: "Minimum expected ROI % to flag as opportunity (default: 50)",
-      required: false,
-      schema: { type: "number" },
-    },
-  ],
-  examples: [
-    [
-      { name: "{{user1}}", content: { text: "Find me profitable Pokemon cards to grade" } } as ActionExample,
-      { name: "{{agentName}}", content: { text: "Scanning for grading arbitrage opportunities...", action: "TCG_ORACLE_ARB_GRADE" } } as ActionExample,
-    ],
-    [
-      { name: "{{user1}}", content: { text: "What Magic cards have the best grading ROI?" } } as ActionExample,
-      { name: "{{agentName}}", content: { text: "Running arbitrage scanner on Magic: The Gathering...", action: "TCG_ORACLE_ARB_GRADE" } } as ActionExample,
-    ],
-  ],
-  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
-  handler: async (
-    runtime: IAgentRuntime,
-    message: Memory,
-    _state?: State,
-    _options?: Record<string, unknown>,
-    callback?: HandlerCallback
-  ): Promise<ActionResult | undefined> => {
-    const text = message.content?.text?.toLowerCase() || "";
-
-    // Detect game from message
-    let game = "Pokemon";
-    for (const g of SUPPORTED_GAMES) {
-      if (text.includes(g.toLowerCase())) {
-        game = g;
-        break;
-      }
-    }
-
-    const params: Record<string, string | number> = {
-      game,
-      min_roi: 50,
-      limit: 20,
-    };
-
-    const result = await callApi(getBaseUrl(runtime), "/api/v1/arb-grade", params);
-
-    if (result.error) {
-      if (callback) await callback({ text: `Arbitrage scan failed: ${result.error}` });
-      return { success: false, error: result.error };
-    }
-
-    const summary = safeStringify(result.data, 15);
-    const responseText = `Grading arbitrage opportunities for ${game}:\n\n${summary}`;
-
-    if (callback) await callback({ text: responseText }, "TCG_ORACLE_ARB_GRADE");
-    return { success: true, text: responseText, data: { arbitrage: result.data } };
-  },
-};
-
-// ============================================================
 // PROVIDER: TCG Oracle Context
 // ============================================================
 
@@ -756,7 +677,7 @@ const tcgOraclePlugin: Plugin = {
     "Covers 446K+ products across 25+ games with conformal-calibrated risk " +
     "forecasts — honest VaR plus Safe-Hold/Momentum letter grades, with Monte " +
     "Carlo (GBM/Merton) available opt-in — AI vision card grading with ROI analysis, " +
-    "trending cards feed, grading arbitrage scanner, and real-time market snapshots. " +
+    "trending cards feed, and real-time market snapshots. " +
     "Powered by TCGCSV daily data pipeline.",
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
     const validation = validateTcgOracleConfig(runtime);
@@ -766,7 +687,7 @@ const tcgOraclePlugin: Plugin = {
       console.log(`✅ TCG Oracle v1.1.0 connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
     }
   },
-  actions: [searchAction, gradeAction, simulateAction, marketAction, gradeOrNotAction, trendingAction, arbGradeAction],
+  actions: [searchAction, gradeAction, simulateAction, marketAction, gradeOrNotAction, trendingAction],
   providers: [tcgOracleProvider],
   evaluators: [],
   services: [MarketMonitorService],
