@@ -5,9 +5,10 @@
  * Native TypeScript rewrite of the Python G.A.M.E. SDK version.
  *
  * Features:
- * - Search 370K+ TCG products across 25 games (Pokemon, MTG, Yu-Gi-Oh, etc.)
+ * - Search 446K+ TCG products across 25+ games (Pokemon, MTG, Yu-Gi-Oh, etc.)
  * - AI Vision card grading (PSA/Beckett prediction via Qwen VL)
- * - Monte Carlo price simulation (Heston, Merton, Kou stochastic models)
+ * - Conformal-calibrated risk forecasts (honest VaR + Safe-Hold/Momentum grades);
+ *   Monte Carlo (GBM/Merton) opt-in via the model parameter
  * - Real-time market snapshots from TCGCSV daily data
  * - License key purchase & verification (Ethereum NFT)
  *
@@ -51,7 +52,7 @@ const SUPPORTED_GAMES = [
   "LoL Riftbound",
 ] as const;
 
-const SIMULATION_MODELS = ["heston", "merton", "kou"] as const;
+const SIMULATION_MODELS = ["conformal", "merton", "gbm"] as const;
 
 // ============================================================
 // API Client
@@ -128,7 +129,7 @@ function safeStringify(data: any, maxItems = 10): string {
 const searchAction: Action = {
   name: "TCG_ORACLE_SEARCH",
   description:
-    "Search for trading card products across 25 games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and current market prices from 370K+ real products sourced from TCGCSV daily.",
+    "Search for trading card products across 25 games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and current market prices from 446K+ real products sourced from TCGCSV daily.",
   similes: [
     "SEARCH_CARDS",
     "FIND_CARD",
@@ -287,13 +288,13 @@ const gradeAction: Action = {
 };
 
 // ============================================================
-// ACTION 3: Monte Carlo Price Simulation
+// ACTION 3: Conformal-Calibrated Price Forecast (Monte Carlo opt-in)
 // ============================================================
 
 const simulateAction: Action = {
   name: "TCG_ORACLE_SIMULATE",
   description:
-    "Run Monte Carlo simulation on a TCG card's price to predict future value. Uses real drift and volatility computed from TCGCSV historical data. Supports three stochastic models: Heston (stochastic volatility), Merton (jump-diffusion), and Kou (double-exponential jumps). Returns percentile bands (5th, 25th, 50th, 75th, 95th) for the forecast period.",
+    "Forecast a TCG card's future value with a conformal-calibrated risk model — honest VaR plus Safe-Hold/Momentum letter grades. Monte Carlo (GBM/Merton) is opt-in via the model parameter. Uses real drift and volatility computed from TCGCSV historical data. Monte Carlo models available opt-in: merton (jump-diffusion) and gbm. Returns percentile bands (5th, 25th, 50th, 75th, 95th) for the forecast period.",
   similes: [
     "SIMULATE_PRICE",
     "PRICE_PREDICTION",
@@ -317,9 +318,9 @@ const simulateAction: Action = {
     },
     {
       name: "model",
-      description: "Stochastic model: 'heston', 'merton', or 'kou'",
+      description: "Forecast model (default 'conformal'): 'conformal' (regime-aware split-conformal bands, honest calibrated VaR), or opt into Monte Carlo with 'merton' (jump-diffusion) or 'gbm'",
       required: false,
-      schema: { type: "string", enumValues: ["heston", "merton", "kou"] },
+      schema: { type: "string", enumValues: ["conformal", "merton", "gbm"] },
     },
     {
       name: "days",
@@ -355,17 +356,17 @@ const simulateAction: Action = {
     // Try to extract parameters from text
     const priceMatch = text.match(/\$?([\d,]+(?:\.\d{2})?)/);
     const daysMatch = text.match(/(\d+)\s*days?/i);
-    const modelMatch = text.match(/\b(heston|merton|kou)\b/i);
+    const modelMatch = text.match(/\b(conformal|merton|gbm)\b/i);
 
     const cardName =
       text
-        .replace(/simulate|price|forecast|monte carlo|at|\$[\d,.]+|\d+\s*days?|heston|merton|kou/gi, "")
+        .replace(/simulate|price|forecast|monte carlo|at|\$[\d,.]+|\d+\s*days?|conformal|merton|gbm/gi, "")
         .replace(/\s+/g, " ")
         .trim() || "Unknown Card";
 
     const currentPrice = priceMatch ? parseFloat(priceMatch[1].replace(",", "")) : 0;
     const days = daysMatch ? parseInt(daysMatch[1]) : 30;
-    const model = modelMatch ? modelMatch[1].toLowerCase() : "heston";
+    const model = modelMatch ? modelMatch[1].toLowerCase() : "conformal";
 
     if (currentPrice <= 0) {
       if (callback) await callback({ text: "Please provide a current price for the simulation. Example: 'Simulate Charizard VMAX at $350 for 60 days'" });
@@ -727,10 +728,10 @@ const tcgOracleProvider: Provider = {
     return {
       text: `[TCG Oracle v1.1.0]
 Status: ${status}
-Database: 370,158 products across 25 games
+Database: 446K+ products across 25+ games
 Data source: TCGCSV daily snapshots
-Models: Heston (stochastic vol), Merton (jump-diffusion), Kou (double-exp)
-Actions: search, grade, simulate, market, grade-or-not, trending, arb-grade
+Models: conformal (default — regime-aware split-conformal bands, honest VaR), merton (jump-diffusion), gbm — Monte Carlo is opt-in
+Actions: search, grade, simulate, market, grade-or-not, trending
 Supported games: ${SUPPORTED_GAMES.join(", ")}
 API: ${baseUrl || "TCG_ORACLE_URL not set"}
 
@@ -752,8 +753,9 @@ const tcgOraclePlugin: Plugin = {
   name: "@undesirables/plugin-tcg-oracle",
   description:
     "TCG Oracle — AI-powered trading card market intelligence for ElizaOS agents. " +
-    "Covers 370K+ products across 25 games with Monte Carlo price simulation " +
-    "(Heston/Merton/Kou), AI vision card grading with ROI analysis, " +
+    "Covers 446K+ products across 25+ games with conformal-calibrated risk " +
+    "forecasts — honest VaR plus Safe-Hold/Momentum letter grades, with Monte " +
+    "Carlo (GBM/Merton) available opt-in — AI vision card grading with ROI analysis, " +
     "trending cards feed, grading arbitrage scanner, and real-time market snapshots. " +
     "Powered by TCGCSV daily data pipeline.",
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
