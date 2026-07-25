@@ -4,6 +4,15 @@
 
 # @undesirables/plugin-tcg-oracle
 
+## 🔌 Connect over MCP — one URL, no install
+
+```
+https://mcp.the-undesirables.com
+```
+
+Paste into any MCP client (Claude, Cursor, ChatGPT) — free card search & forecasts, paid calls via x402.
+
+
 **Give any ElizaOS agent real trading card market intelligence — search, grade, and forecast.**
 
 [![npm](https://img.shields.io/npm/v/@undesirables/plugin-tcg-oracle?style=flat-square)](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle)
