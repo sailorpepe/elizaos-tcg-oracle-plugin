@@ -19,9 +19,9 @@ Paste into any MCP client (Claude, Cursor, ChatGPT) — free card search & forec
 [![npm downloads](https://img.shields.io/npm/dm/@undesirables/plugin-tcg-oracle?style=flat-square)](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle)
 [![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-red?style=flat-square)](LICENSE)
 [![ElizaOS](https://img.shields.io/badge/ElizaOS-Compatible-5A67D8?style=flat-square&logo=data:image/svg+xml;base64,&logoColor=white)](https://elizaos.ai)
-[![Games](https://img.shields.io/badge/Games-Pok%C3%A9mon%20%C2%B7%20MTG%20%C2%B7%20Yu--Gi--Oh!-ff14a0?style=flat-square)](https://tcgcsv.com)
+[![Games](https://img.shields.io/badge/Games-Pok%C3%A9mon%20%C2%B7%20MTG%20%C2%B7%20Yu--Gi--Oh!-ff14a0?style=flat-square)](https://oracle.the-undesirables.com)
 
-[npm](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle) · [TCG Oracle API](https://the-undesirables.com/docs) · [Kaggle Dataset](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence)
+[npm](https://www.npmjs.com/package/@undesirables/plugin-tcg-oracle) · [TCG Oracle API](https://the-undesirables.com/docs)
 
 </div>
 
@@ -49,7 +49,7 @@ The trading card market is worth **$50 billion** and growing. Millions of people
 
 This plugin gives your ElizaOS agent the ability to do all of that in one conversation:
 
-1. **"Search for Charizard cards"** → Instantly searches 446K+ real products across 25+ games
+1. **"Search for Charizard cards"** → Instantly searches 456K+ real products across 25+ games
 2. **"Grade this card"** → AI vision analyzes centering, corners, edges, surface → predicts PSA/Beckett score
 3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs a calibrated conformal risk forecast → returns honest VaR + percentile price bands
 4. **"Show me the Pokemon market"** → Pulls the latest daily market snapshot with top movers and volume trends
@@ -89,7 +89,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 
 | Action | What It Does | Example Prompt |
 |--------|-------------|----------------|
-| `TCG_ORACLE_SEARCH` | Search 446K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
+| `TCG_ORACLE_SEARCH` | Search 456K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
 | `TCG_ORACLE_SIMULATE` | Calibrated risk forecast — honest VaR (conformal default; Monte Carlo opt-in) | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
@@ -118,7 +118,7 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 ┌────────────────────────────────────────────────────────────────┐
 │                    TCG Oracle API Server                        │
 │                                                                │
-│  /api/v1/search ─────── 446K+ products (TCGCSV)               │
+│  /api/v1/search ─────── 456K+ products                        │
 │  /api/v1/grade ──────── Vision LLM + OpenCV → PSA/BGS score   │
 │  /api/v1/simulate ───── Conformal forecast + card grades      │
 │  /api/v1/market ─────── Daily snapshot + top movers            │
@@ -132,13 +132,13 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 
 ## Supported Games (25)
 
-Pokémon · Magic: The Gathering · Yu-Gi-Oh! · Disney Lorcana · One Piece · Flesh and Blood · Star Wars: Unlimited · Dragon Ball Super · Digimon · MetaZoo · Union Arena · Gundam Card Game · LoL Riftbound · and 12 more via TCGCSV
+Pokémon · Magic: The Gathering · Yu-Gi-Oh! · Disney Lorcana · One Piece · Flesh and Blood · Star Wars: Unlimited · Dragon Ball Super · Digimon · MetaZoo · Union Arena · Gundam Card Game · LoL Riftbound · and 12 more
 
 ---
 
 ## How the Data Works
 
-All market data comes from [TCGCSV](https://tcgcsv.com) — a community project that snapshots pricing data daily for 25 TCG games. Our GitLab CI pipeline automatically refreshes this data every 24 hours. The full dataset (446K+ products) is also available on [Kaggle](https://www.kaggle.com/datasets/sailorpepe/tcg-market-intelligence).
+USD market prices originate from TCGPlayer. **That upstream feed is currently unavailable, so USD prices are frozen at their last good date** — every response carries its own `latest_date`, and the oracle root publishes panel freshness under `panels`. A Japanese-print panel (24 games, 364K cards, 167K of them with both an ask and a dealer buyback bid) refreshes every morning. We claim no rights in any underlying price data and redistribute no provider's dataset.
 
 **Risk model — conformal calibration (default):**
 
