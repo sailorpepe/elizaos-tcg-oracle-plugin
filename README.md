@@ -4,6 +4,8 @@
 
 # @undesirables/plugin-tcg-oracle
 
+> **Status 2026-09-12:** the USD price panel behind this plugin froze on 2026-09-07. Search still works (prices carry `usd_panel {frozen, as_of}`); the market, simulate and trending actions are suspended and return `{"status":"suspended"}` without charging. See `GET https://oracle.the-undesirables.com/` → `endpoints.suspended`.
+
 ## 🔌 Connect over MCP — one URL, no install
 
 ```
@@ -52,7 +54,7 @@ This plugin gives your ElizaOS agent the ability to do all of that in one conver
 1. **"Search for Charizard cards"** → Instantly searches 456K+ real products across 25+ games
 2. **"Grade this card"** → AI vision analyzes centering, corners, edges, surface → predicts PSA/Beckett score
 3. **"Simulate Charizard VMAX at $350 for 60 days"** → Runs a calibrated conformal risk forecast → returns honest VaR + percentile price bands
-4. **"Show me the Pokemon market"** → Pulls the latest daily market snapshot with top movers and volume trends
+4. **"Show me the Pokemon market"** → Market snapshot — **suspended since 2026-09-12** while the USD price panel is frozen (the oracle answers `{"status":"suspended"}`, no charge)
 
 No API keys required from third parties. You just point it at the TCG Oracle server (self-hosted or public).
 
@@ -91,8 +93,8 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 |--------|-------------|----------------|
 | `TCG_ORACLE_SEARCH` | Search 456K+ products by card name, set, or keyword | "Search for Base Set Charizard" |
 | `TCG_ORACLE_GRADE` | Grade a card image URL — returns PSA/Beckett prediction | "Grade this card: https://..." |
-| `TCG_ORACLE_SIMULATE` | Calibrated risk forecast — honest VaR (conformal default; Monte Carlo opt-in) | "Simulate Charizard at $350 for 60 days" |
-| `TCG_ORACLE_MARKET` | Pull the latest daily market snapshot for any game | "Show me the Pokemon market" |
+| `TCG_ORACLE_SIMULATE` | **Suspended while the USD panel is frozen (since 2026-09-07)** — the oracle returns `{status: suspended}`, no charge | "Simulate Charizard at $350 for 60 days" |
+| `TCG_ORACLE_MARKET` | **Suspended while the USD panel is frozen** — returns `{status: suspended}`, no charge | "Show me the Pokemon market" |
 | `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
 | `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
 
@@ -120,9 +122,9 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 │                                                                │
 │  /api/v1/search ─────── 456K+ products                        │
 │  /api/v1/grade ──────── Vision LLM + OpenCV → PSA/BGS score   │
-│  /api/v1/simulate ───── Conformal forecast + card grades      │
-│  /api/v1/market ─────── Daily snapshot + top movers            │
-│  /api/v1/trending ───── 30-day volume + price velocity         │
+│  /api/v1/simulate ───── SUSPENDED (USD panel frozen 09-07)    │
+│  /api/v1/market ─────── SUSPENDED (USD panel frozen 09-07)    │
+│  /api/v1/trending ───── SUSPENDED (USD panel frozen 09-07)    │
 │  /api/v1/grade-or-not ─ PSA fee × grade × value = GO/NO-GO   │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
