@@ -96,7 +96,10 @@ That's it. Your agent can now search cards, grade images, and run simulations.
 | `TCG_ORACLE_SIMULATE` | **Suspended while the USD panel is frozen (since 2026-09-07)** — the oracle returns `{status: suspended}`, no charge | "Simulate Charizard at $350 for 60 days" |
 | `TCG_ORACLE_MARKET` | **Suspended while the USD panel is frozen** — returns `{status: suspended}`, no charge | "Show me the Pokemon market" |
 | `TCG_ORACLE_GRADE_OR_NOT` | Grade-or-Not ROI engine — "will grading this make me money?" | "Should I grade my Charizard?" |
-| `TCG_ORACLE_TRENDING` | Trending cards by 30-day sales volume and price velocity | "What Pokemon cards are trending?" |
+| `TCG_ORACLE_TRENDING` | **Suspended while the USD panel is frozen** — returns `{status: suspended}`, no charge | "What Pokemon cards are trending?" |
+| `TCG_ORACLE_JP_SUMMARY` | Japanese two-sided dealer board (bid + ask, yen) as daily aggregates — bands, per-game, movement, on-chain root. Free, live | "How is the Japanese card market moving?" |
+| `TCG_ORACLE_SPORTS_BOARD` | Daily sports movers board per live league with conformal 7-day context. Free, live | "Who are the hot NFL players this week?" |
+| `TCG_ORACLE_LOAN_PREVIEW` | Graded-slab loan terms v2 — six-step LTV derivation (live value basis, empirical-VaR tail). Free for free-board slabs | "Loan terms for a PSA 10 of product 566544" |
 
 ---
 

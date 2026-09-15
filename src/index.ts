@@ -1,15 +1,17 @@
 /**
- * TCG Oracle — ElizaOS Plugin v1.0.0
+ * TCG Oracle — ElizaOS Plugin v2.0.2
  * ====================================
  * AI-powered trading card market intelligence for ElizaOS agents.
  * Native TypeScript rewrite of the Python G.A.M.E. SDK version.
  *
  * Features:
- * - Search 446K+ TCG products across 25+ games (Pokemon, MTG, Yu-Gi-Oh, etc.)
+ * - Search 455K+ TCG products across 25+ games (Pokemon, MTG, Yu-Gi-Oh, etc.)
+ * - Japanese two-sided dealer board summary, graded-slab loan terms, daily sports movers board
  * - AI Vision card grading (PSA/Beckett prediction via Qwen VL)
  * - Conformal-calibrated risk forecasts (honest VaR + Safe-Hold/Momentum grades);
  *   Monte Carlo (GBM/Merton) opt-in via the model parameter
- * - Real-time market snapshots from TCGCSV daily data
+ * - Market snapshots / simulate / trending: SUSPENDED since the USD panel froze 2026-09-07
+ *   (the oracle answers {"status":"suspended"} and never charges) — actions surface that honestly
  * - License key purchase & verification (Ethereum NFT)
  *
  * @see https://the-undesirables.com
@@ -91,7 +93,7 @@ async function callApi(
 
     const response = await fetch(url.toString(), {
       signal: controller.signal,
-      headers: { "User-Agent": "elizaos-tcg-oracle-plugin/1.0.0" },
+      headers: { "User-Agent": "elizaos-tcg-oracle-plugin/2.0.2" },
     });
     clearTimeout(timeout);
 
@@ -100,6 +102,19 @@ async function callApi(
     }
 
     const json = (await response.json()) as Record<string, any>;
+    if (json && json.status === "suspended") {
+      const alts = json.alternatives
+        ? Object.entries(json.alternatives as Record<string, string>)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("; ")
+        : "";
+      return {
+        error:
+          `${endpoint} is SUSPENDED (not charged). ${json.reason || ""} ` +
+          `Resumes when: ${json.resumes_when || "unknown"}.` +
+          (alts ? ` Live alternatives — ${alts}` : ""),
+      };
+    }
     return { data: json.data || json };
   } catch (err: any) {
     if (err.name === "AbortError") {
@@ -129,7 +144,7 @@ function safeStringify(data: any, maxItems = 10): string {
 const searchAction: Action = {
   name: "TCG_ORACLE_SEARCH",
   description:
-    "Search for trading card products across 25+ games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and current market prices from 446K+ real products sourced from TCGCSV daily.",
+    "Search for trading card products across 25+ games including Pokemon, Magic: The Gathering, Yu-Gi-Oh, Lorcana, One Piece, and more. Returns product names, set info, and the last published USD price (the USD panel froze 2026-09-07 and every row says so in-band) from 455K+ real products.",
   similes: [
     "SEARCH_CARDS",
     "FIND_CARD",
@@ -294,7 +309,7 @@ const gradeAction: Action = {
 const simulateAction: Action = {
   name: "TCG_ORACLE_SIMULATE",
   description:
-    "Forecast a TCG card's future value with a conformal-calibrated risk model — honest VaR plus Safe-Hold/Momentum letter grades. Monte Carlo (GBM/Merton) is opt-in via the model parameter. Uses real drift and volatility computed from TCGCSV historical data. Monte Carlo models available opt-in: merton (jump-diffusion) and gbm. Returns percentile bands (5th, 25th, 50th, 75th, 95th) for the forecast period.",
+    "SUSPENDED since 2026-09-07 (frozen USD panel; the oracle returns status=suspended and does not charge — the action reports that). Was: forecast a TCG card's future value with a conformal-calibrated risk model — honest VaR plus Safe-Hold/Momentum letter grades. Monte Carlo (GBM/Merton) is opt-in via the model parameter. Uses real drift and volatility computed from the historical USD panel. Monte Carlo models available opt-in: merton (jump-diffusion) and gbm. Returns percentile bands (5th, 25th, 50th, 75th, 95th) for the forecast period.",
   similes: [
     "SIMULATE_PRICE",
     "PRICE_PREDICTION",
@@ -401,7 +416,7 @@ const simulateAction: Action = {
 const marketAction: Action = {
   name: "TCG_ORACLE_MARKET",
   description:
-    "Retrieve the latest daily market data snapshot from TCGCSV for a specific game. Returns top movers, price changes, volume data, and market trends. Data is refreshed daily via automated pipeline.",
+    "SUSPENDED since 2026-09-07 (frozen USD panel; the oracle returns status=suspended and does not charge — the action reports that and points at the live alternatives: TCG_ORACLE_JP_SUMMARY, TCG_ORACLE_SPORTS_BOARD, TCG_ORACLE_LOAN_PREVIEW). Was: daily USD market snapshot for a game.",
   similes: [
     "MARKET_SNAPSHOT",
     "MARKET_DATA",
@@ -561,7 +576,7 @@ const gradeOrNotAction: Action = {
 const trendingAction: Action = {
   name: "TCG_ORACLE_TRENDING",
   description:
-    "Returns the top trending trading cards by market activity (30-day sales volume, views, and price velocity). Covers all 25 supported TCG games. Useful for spotting market momentum and emerging opportunities.",
+    "SUSPENDED since 2026-09-07 (frozen USD panel; the oracle returns status=suspended and does not charge — the action reports that). Was: returns the top trending trading cards by market activity (30-day sales volume, views, and price velocity). Covers all 25 supported TCG games. Useful for spotting market momentum and emerging opportunities.",
   similes: [
     "TRENDING_CARDS",
     "HOT_CARDS",
@@ -632,6 +647,262 @@ const trendingAction: Action = {
 };
 
 // ============================================================
+// ACTION 7: Japanese two-sided dealer board — summary (free, live)
+// ============================================================
+
+const jpSummaryAction: Action = {
+  name: "TCG_ORACLE_JP_SUMMARY",
+  description:
+    "Daily aggregate summary of the Japanese two-sided dealer board (bid AND ask, yen): card/set/game totals, two-sided share, ask price bands, per-game breakdown, day-over-day and week-over-week movement, and the on-chain commitment root. Aggregates only — no per-card names, ids or prices. Free, live (this is the feed the Card Souls call from 2026-09-14).",
+  similes: [
+    "JAPANESE_MARKET",
+    "JP_BOARD",
+    "JP_SUMMARY",
+    "YEN_MARKET",
+    "JAPANESE_CARDS",
+    "DEALER_BOARD",
+  ],
+  parameters: [
+    {
+      name: "section",
+      description: "Optional: narrow the answer to one block — totals, bands, per_game or movement (default: all)",
+      required: false,
+      schema: { type: "string" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "How is the Japanese card market moving today?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling the Japanese two-sided board summary...", action: "TCG_ORACLE_JP_SUMMARY" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Give me the JP dealer board summary" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Fetching today's Japanese board aggregates...", action: "TCG_ORACLE_JP_SUMMARY" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content.text?.toLowerCase() || "";
+    const sections = ["totals", "bands", "per_game", "movement"];
+    const section =
+      (options?.section as string) ||
+      sections.find((k) => text.includes(k.replace("_", " ")) || text.includes(k)) ||
+      "";
+
+    const result = await callApi(getBaseUrl(runtime), "/api/v1/jp/summary", {});
+
+    if (result.error) {
+      if (callback) await callback({ text: `Japanese board summary failed: ${result.error}` });
+      return { success: false, error: result.error };
+    }
+
+    const d = result.data || {};
+    const t = d.totals || {};
+    const dod = d.movement?.day_over_day || {};
+    const headline =
+      `Japanese two-sided board — ${d.as_of}: ${t.cards} cards / ${t.sets} sets / ${t.games} games, ` +
+      `${t.two_sided} two-sided (${Math.round((t.two_sided_share || 0) * 100)}%), median ask ¥${t.median_ask_yen}. ` +
+      `Day-over-day: ${dod.asks_changed} asks moved (${dod.up} up / ${dod.down} down).`;
+    const body = section && d[section] !== undefined ? { as_of: d.as_of, [section]: d[section], onchain: d.onchain } : d;
+    const responseText = `${headline}\n\n${safeStringify(body)}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_JP_SUMMARY");
+    return { success: true, text: responseText, data: { jp_summary: d } };
+  },
+};
+
+// ============================================================
+// ACTION 8: Daily sports movers board (free, live)
+// ============================================================
+
+const SPORTS_LEAGUES = ["mlb", "nhl", "nfl", "ncaaf", "nba", "ncaab", "wnba"];
+
+const sportsBoardAction: Action = {
+  name: "TCG_ORACLE_SPORTS_BOARD",
+  description:
+    "Daily sports movers board — hot players per live league (MLB, NHL, NFL, NCAAF, NBA, ...) with conformal 7-day context, headshots and the current calibration verdict. Free, live. Name a league to narrow the answer.",
+  similes: [
+    "SPORTS_MOVERS",
+    "HOT_PLAYERS",
+    "SPORTS_BOARD",
+    "PLAYER_MOVERS",
+    "SPORTS_CARDS",
+  ],
+  parameters: [
+    {
+      name: "league",
+      description: "Optional league filter: mlb, nhl, nfl, ncaaf, nba, ncaab, wnba",
+      required: false,
+      schema: { type: "string" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "Who are the hot NFL players this week?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling the NFL movers board...", action: "TCG_ORACLE_SPORTS_BOARD" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Show me the sports movers board" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Fetching today's sports board across live leagues...", action: "TCG_ORACLE_SPORTS_BOARD" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    _options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content.text?.toLowerCase() || "";
+    const league = SPORTS_LEAGUES.find((l) => new RegExp(`\\b${l}\\b`).test(text));
+
+    const result = await callApi(getBaseUrl(runtime), "/api/v1/sports/board", {});
+
+    if (result.error) {
+      if (callback) await callback({ text: `Sports board failed: ${result.error}` });
+      return { success: false, error: result.error };
+    }
+
+    const d = result.data || {};
+    const leagues: Record<string, any> = d.leagues || {};
+    const live = Object.keys(leagues);
+    let body: any;
+    let label: string;
+    if (league && leagues[league]) {
+      body = leagues[league];
+      label = league.toUpperCase();
+    } else if (league) {
+      body = { live_leagues: live, note: `${league} is not on today's board` };
+      label = league.toUpperCase();
+    } else {
+      body = leagues;
+      label = live.map((l) => l.toUpperCase()).join(", ");
+    }
+    const responseText =
+      `Sports movers board (${d.horizon_days || 7}-day horizon) — ${label}. Calibration: ${safeStringify(d.calibration)}\n\n${safeStringify(body, 25)}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_SPORTS_BOARD");
+    return { success: true, text: responseText, data: { sports_board: d, league: league || null } };
+  },
+};
+
+// ============================================================
+// ACTION 9: Graded-slab loan terms — free worked derivation
+// ============================================================
+
+const loanPreviewAction: Action = {
+  name: "TCG_ORACLE_LOAN_PREVIEW",
+  description:
+    "Graded-slab lending terms (loan-terms v2, live basis): the six-step worked LTV derivation — collateral value, empirical-VaR tail, max LTV, liquidation price, census liquidity tier, APR premium — for a graded card. Give a product_id + grade (e.g. 'PSA 10'); without one it walks the top of today's free board. Free for free-board slabs; other slabs point at the paid /api/v1/loan-terms quote ($0.10, x402).",
+  similes: [
+    "LOAN_TERMS",
+    "CARD_LOAN",
+    "LTV",
+    "COLLATERAL_VALUE",
+    "SLAB_LOAN",
+    "LENDING_TERMS",
+  ],
+  parameters: [
+    {
+      name: "product_id",
+      description: "TCG product id of the card (from TCG_ORACLE_SEARCH)",
+      required: false,
+      schema: { type: "number" },
+    },
+    {
+      name: "grade",
+      description: "Slab grade, e.g. 'PSA 10', 'PSA 9', 'BGS 9.5', 'CGC 10'",
+      required: false,
+      schema: { type: "string" },
+    },
+    {
+      name: "term_days",
+      description: "Loan term in days (default 30)",
+      required: false,
+      schema: { type: "number" },
+    },
+  ],
+  examples: [
+    [
+      { name: "{{user1}}", content: { text: "What loan terms would a PSA 10 of product 566544 get?" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Working the graded-slab LTV derivation...", action: "TCG_ORACLE_LOAN_PREVIEW" } } as ActionExample,
+    ],
+    [
+      { name: "{{user1}}", content: { text: "Show me the loan free board" } } as ActionExample,
+      { name: "{{agentName}}", content: { text: "Pulling today's rated slab universe and the free-board derivation...", action: "TCG_ORACLE_LOAN_PREVIEW" } } as ActionExample,
+    ],
+  ],
+  validate: async (runtime: IAgentRuntime) => !!getBaseUrl(runtime),
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    _state?: State,
+    options?: Record<string, unknown>,
+    callback?: HandlerCallback
+  ): Promise<ActionResult | undefined> => {
+    const text = message.content.text || "";
+    const baseUrl = getBaseUrl(runtime);
+
+    let productId = Number(options?.product_id) || 0;
+    if (!productId) {
+      const m = text.match(/\b(\d{5,7})\b/);
+      if (m) productId = Number(m[1]);
+    }
+    let grade = (options?.grade as string) || "";
+    if (!grade) {
+      const g = text.match(/\b(PSA|BGS|CGC|SGC)\s*(10|9\.5|9|8\.5|8|7|6|5)\b/i);
+      if (g) grade = `${g[1].toUpperCase()} ${g[2]}`;
+    }
+    const termDays = Number(options?.term_days) || (text.match(/\b(\d{1,3})\s*-?\s*day/i)?.[1] ? Number(text.match(/\b(\d{1,3})\s*-?\s*day/i)![1]) : 30);
+
+    // No slab named: walk the free board (universe → first free_board slab)
+    let universeNote = "";
+    if (!productId || !grade) {
+      const uni = await callApi(baseUrl, "/api/v1/loan-terms/universe", {});
+      if (uni.error) {
+        if (callback) await callback({ text: `Loan universe failed: ${uni.error}` });
+        return { success: false, error: uni.error };
+      }
+      const cards: any[] = uni.data?.cards || [];
+      const pick = cards.find((c) => c.free_board && (!productId || c.product_id === productId));
+      if (!pick) {
+        const msg = productId
+          ? `product ${productId} is not on today's free board — a full quote is the paid /api/v1/loan-terms?product_id=${productId}&grade= ($0.10, x402).`
+          : "no free-board slab published today.";
+        if (callback) await callback({ text: `Loan preview: ${msg}` });
+        return { success: false, error: msg };
+      }
+      productId = pick.product_id;
+      grade = pick.grade;
+      universeNote = `Universe ${uni.data?.universe_date}: ${uni.data?.total} rated slabs, ${uni.data?.free_board} on the free board (${uni.data?.method_version}). Showing #${pick.rank} ${pick.name} ${pick.grade}.\n\n`;
+    }
+
+    const result = await callApi(baseUrl, `/api/v1/loan-terms/preview/${productId}`, { grade, term_days: termDays });
+
+    if (result.error) {
+      const hint = result.error.includes("404")
+        ? ` (${productId} ${grade} is not on today's free board — full quote: /api/v1/loan-terms?product_id=${productId}&grade=${encodeURIComponent(grade)}, $0.10 x402)`
+        : "";
+      if (callback) await callback({ text: `Loan preview failed: ${result.error}${hint}` });
+      return { success: false, error: result.error };
+    }
+
+    const d = result.data || {};
+    const responseText = `${universeNote}Loan terms — ${d.card || productId} ${d.grade || grade}, ${d.term_days || termDays}-day (${d.method_version}):\n\n${safeStringify(d)}`;
+
+    if (callback) await callback({ text: responseText }, "TCG_ORACLE_LOAN_PREVIEW");
+    return { success: true, text: responseText, data: { loan_preview: d, product_id: productId, grade } };
+  },
+};
+
+// ============================================================
 // PROVIDER: TCG Oracle Context
 // ============================================================
 
@@ -647,20 +918,20 @@ const tcgOracleProvider: Provider = {
     const status = baseUrl ? "connected" : "not configured";
 
     return {
-      text: `[TCG Oracle v1.1.0]
+      text: `[TCG Oracle v2.0.2]
 Status: ${status}
-Database: 446K+ products across 25+ games
-Data source: TCGCSV daily snapshots
+Database: 455K+ products across 25+ games (USD panel FROZEN 2026-09-07 — served as last-published, labelled)
+Live feeds: Japanese two-sided dealer board (daily, on-chain root), graded-slab loan terms v2, sports movers board
 Models: conformal (default — regime-aware split-conformal bands, honest VaR), merton (jump-diffusion), gbm — Monte Carlo is opt-in
-Actions: search, grade, simulate, market, grade-or-not, trending
+Actions: search, grade, grade-or-not, jp-summary, sports-board, loan-preview (live) · simulate, market, trending (SUSPENDED — oracle answers status=suspended, never charges)
 Supported games: ${SUPPORTED_GAMES.join(", ")}
 API: ${baseUrl || "TCG_ORACLE_URL not set"}
 
-The agent can search cards, grade card images, simulate prices via Monte Carlo, pull market snapshots, check grading ROI, view trending cards, and scan for grading arbitrage opportunities.`,
+The agent can search cards, grade card images, check grading ROI, summarise the Japanese two-sided board, pull the sports movers board and work graded-slab loan terms. Simulate / market / trending are suspended until a live USD series exists again.`,
       values: {
         tcgOracleStatus: status,
         tcgOracleUrl: baseUrl || "not set",
-        totalProducts: 370158,
+        totalProducts: 455000,
       },
     };
   },
@@ -674,20 +945,20 @@ const tcgOraclePlugin: Plugin = {
   name: "@undesirables/plugin-tcg-oracle",
   description:
     "TCG Oracle — AI-powered trading card market intelligence for ElizaOS agents. " +
-    "Covers 446K+ products across 25+ games with conformal-calibrated risk " +
-    "forecasts — honest VaR plus Safe-Hold/Momentum letter grades, with Monte " +
-    "Carlo (GBM/Merton) available opt-in — AI vision card grading with ROI analysis, " +
-    "trending cards feed, and real-time market snapshots. " +
-    "Powered by TCGCSV daily data pipeline.",
+    "Covers 455K+ products across 25+ games: set-aware search, AI vision card grading " +
+    "with ROI analysis, the Japanese two-sided dealer board summary, graded-slab loan " +
+    "terms (empirical-VaR LTV, live basis) and the daily sports movers board. " +
+    "USD-panel forecasts, market snapshots and trending are suspended since 2026-09-07 " +
+    "(the oracle answers status=suspended and never charges).",
   init: async (config: Record<string, string>, runtime: IAgentRuntime) => {
     const validation = validateTcgOracleConfig(runtime);
     if (!validation.valid) {
       console.warn(`⚠️ TCG Oracle: ${validation.error}`);
     } else {
-      console.log(`✅ TCG Oracle v1.1.0 connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
+      console.log(`✅ TCG Oracle v2.0.2 connected to ${runtime.getSetting?.("TCG_ORACLE_URL")}`);
     }
   },
-  actions: [searchAction, gradeAction, simulateAction, marketAction, gradeOrNotAction, trendingAction],
+  actions: [searchAction, gradeAction, simulateAction, marketAction, gradeOrNotAction, trendingAction, jpSummaryAction, sportsBoardAction, loanPreviewAction],
   providers: [tcgOracleProvider],
   evaluators: [],
   services: [MarketMonitorService],
